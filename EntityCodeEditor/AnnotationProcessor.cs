@@ -8,6 +8,14 @@ namespace EntityCodeEditor
 	{
 		private string addUsing = "using System.ComponentModel.DataAnnotations;";
 
+		/// <summary>
+		/// summaryを元に[Data(name=)]のアノテーションを追加する
+		/// </summary>
+		/// <param name="fileFullPath">対象のファイルのフルパス</param>
+		/// <param name="timeStampChecked">タイムスタンプを追加して新規のファイルを作る</param>
+		/// <param name="toTrashChecked">元のファイルをごみ箱に捨てて新規のファイルを元のファイル名で作成する</param>
+		/// <param name="moveOldFolderChecked">元のファイルをoldフォルダに移動して新規のファイルを元のファイル名で作成する</param>
+		/// <returns>対象のコード内容</returns>
 		public string AddAnnotationOperation(string fileFullPath, bool timeStampChecked, bool toTrashChecked, bool moveOldFolderChecked)
 		{
 			var input = File.ReadAllText(fileFullPath, Encoding.UTF8);
