@@ -51,7 +51,7 @@
 			var parentDirectory = Directory.GetParent(directoryPath);
 			if (parentDirectory != null)
 			{
-				var programCs = parentDirectory.GetFiles()
+				var programCs = parentDirectory.GetFiles("Program.cs", SearchOption.AllDirectories)
 					.FirstOrDefault(d => d.Name.Equals("Program.cs", StringComparison.OrdinalIgnoreCase))?.FullName;
 				return programCs;
 			}
