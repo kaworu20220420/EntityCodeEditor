@@ -28,7 +28,7 @@ namespace EntityCodeEditor
 				var indentMatch = Regex.Match(line, @"^(\s*)");
 				var indent = indentMatch.Success ? indentMatch.Groups[1].Value : "";
 
-				// 直前に summary コメントがあるか確認（最大3行前まで）
+				// 直前3行以内に summary コメントがあるか確認
 				bool hasSummary = false;
 				for (int j = i - 1; j >= Math.Max(0, i - 3); j--)
 				{
@@ -38,7 +38,6 @@ namespace EntityCodeEditor
 						break;
 					}
 				}
-
 				if (hasSummary) continue;
 
 				// プロパティ判定（1行のみ）
@@ -46,7 +45,8 @@ namespace EntityCodeEditor
 				if (propMatch.Success)
 				{
 					var propName = propMatch.Groups[1].Value;
-					lines.Insert(i, $"{indent}/// <summary>\r\n{indent}/// {propName}\r\n{indent}/// </summary");
+					var comment = $"{indent}/// <summary>\r\n{indent}/// {propName}\r\n{indent}/// </summary>";
+					lines.Insert(i, comment);
 					continue;
 				}
 
