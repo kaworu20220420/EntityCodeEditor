@@ -19,15 +19,11 @@ namespace EntityCodeEditor
 
 		static string AddComments(List<string> lines)
 		{
-			var targets = lines
-				.Select((line, index) => new { line, index })
-				.Where(x => x.line.Contains("public"))
-				.ToList();
-
-			for (int i = targets.Count - 1; i >= 0; i--)
+			for (int i = lines.Count - 1; i >= 0; i--)
 			{
-				var line = targets[i].line;
-				var index = targets[i].index;
+				var line = lines[i];
+				if (!line.Contains("public")) continue;
+
 				var trimmed = line.Trim();
 
 				// インデント取得
@@ -35,7 +31,7 @@ namespace EntityCodeEditor
 				var indent = indentMatch.Success ? indentMatch.Groups[1].Value : "";
 
 				// 1行前に </summary> があるか確認
-				if (index > 0 && lines[index - 1].Trim().Contains("</summary>"))
+				if (i > 0 && lines[i - 1].Trim().Contains("</summary>"))
 				{
 					continue;
 				}
@@ -46,7 +42,7 @@ namespace EntityCodeEditor
 				{
 					var propName = propMatch.Groups[1].Value;
 					var comment = $"{indent}/// <summary>\r\n{indent}/// {propName}\r\n{indent}/// </summary>";
-					lines.Insert(index, comment);
+					lines.Insert(i, comment);
 					continue;
 				}
 
@@ -83,7 +79,7 @@ namespace EntityCodeEditor
 						commentLines.Add($"{indent}/// <returns>{returnType}</returns>");
 					}
 
-					lines.Insert(index, string.Join("\r\n", commentLines));
+					lines.Insert(i, string.Join("\r\n", commentLines));
 				}
 			}
 
