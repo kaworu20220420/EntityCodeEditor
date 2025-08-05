@@ -79,7 +79,5 @@ namespace EntityCodeEditor
 
 				return string.Join("\r\n", updatedLines);	
 		}
-		}
-	}
 	}
 }
