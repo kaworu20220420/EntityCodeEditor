@@ -2,6 +2,8 @@
 using Microsoft.VisualBasic.FileIO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using static System.Windows.Forms.LinkLabel;
 
 namespace EntityCodeEditor
 {
@@ -19,41 +21,32 @@ namespace EntityCodeEditor
 
 		static string AddComments(List<string> lines)
 		{
-			// コメント対象行を抽出（public を含み、直前に </summary> がない）
-			var targets = lines
-				.Select((line, i) => new { line, i })
-				.Where(x =>
-					x.line.Contains("public") &&
-					!x.line.Contains("///") &&
-					(x.i == 0 || !lines[x.i - 1].Trim().Contains("</summary>"))
-				)
-				.ToList();
-
 			// 逆順でコメント挿入
-			for (int i = targets.Count - 1; i >= 0; i--)
+			for (int i = lines.Count - 1; i >= 0; i--)
 			{
-				var target = targets[i];
-				var line = target.line;
-				var index = target.i;
+				if (!lines[i].Contains("public"))
+					continue;
 
-				var indentMatch = Regex.Match(line, @"^(\s*)");
+				var indentMatch = Regex.Match(lines[i], @"^(\s*)");
 				var indent = indentMatch.Success ? indentMatch.Groups[1].Value : "";
 
-				var trimmed = line.Trim();
-
 				// プロパティ判定（型名とプロパティ名を抽出）
-				var propMatch = Regex.Match(trimmed, @"^public\s+([\w<>,\s]+)\s+(\w+)\s*\{.*\}");
+				var propMatch = Regex.Match(lines[i].Trim(), @"^public\s+([\w<>,\s]+)\s+(\w+)\s*\{.*\}");
 				if (propMatch.Success)
 				{
 					var typeName = propMatch.Groups[1].Value.Trim();
 					var propName = propMatch.Groups[2].Value;
 					var comment = $"{indent}/// <summary>\r\n{indent}/// {propName} ({typeName})\r\n{indent}/// </summary>";
-					lines.Insert(index, comment);
+					if (i + 1 < lines.Count && lines[i + 1].Contains("/summary"))
+					{
+						continue;
+					}
+					lines[i] = $"{comment}\r\n{lines[i]}";
 					continue;
 				}
 
 				// メソッド判定（戻り値・メソッド名・引数を抽出）
-				var methodMatch = Regex.Match(trimmed, @"^public\s+([\w<>,\s]+)\s+(\w+)\s*\(([^)]*)\)");
+				var methodMatch = Regex.Match(lines[i].Trim(), @"^public\s+([\w<>,\s]+)\s+(\w+)\s*\(([^)]*)\)");
 				if (methodMatch.Success)
 				{
 					var returnType = methodMatch.Groups[1].Value.Trim();
@@ -61,11 +54,11 @@ namespace EntityCodeEditor
 					var args = methodMatch.Groups[3].Value;
 
 					var commentLines = new List<string>
-			{
-				$"{indent}/// <summary>",
-				$"{indent}/// {methodName}",
-				$"{indent}/// </summary>"
-			};
+					{
+						$"{indent}/// <summary>",
+						$"{indent}/// {methodName}",
+						$"{indent}/// </summary>"
+					};
 
 					if (!string.IsNullOrWhiteSpace(args))
 					{
@@ -85,7 +78,12 @@ namespace EntityCodeEditor
 						commentLines.Add($"{indent}/// <returns>{returnType}</returns>");
 					}
 
-					lines.Insert(index, string.Join("\r\n", commentLines));
+					if (i + 1 < lines.Count && lines[i + 1].Contains("/summary"))
+					{
+						continue;
+					}
+					lines[i] = string.Join("\r\n", commentLines) + lines[i];
+					continue;
 				}
 			}
 
