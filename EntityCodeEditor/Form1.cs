@@ -7,6 +7,8 @@ namespace EntityCodeEditor
 		private RepositoryGenerator repositoryGenerator = new RepositoryGenerator();
 		private OutputPathGenerator outputPathGenerator = new OutputPathGenerator();
 		private RepositoriesRegister RepositoriesRegister = new RepositoriesRegister();
+		private CommentGenerator commentGenerator = new CommentGenerator();
+
 		private List<string> repositoryes = new List<string>();
 		string addUsing = "using System.ComponentModel.DataAnnotations;";
 		string outputPath = string.Empty;
@@ -30,6 +32,12 @@ namespace EntityCodeEditor
 
 		private void ExecuteButton_Click(object sender, EventArgs e)
 		{
+			if (AddComment.Checked)
+			{
+				commentGenerator.AddComment(FilePathBox.Text);
+				return;
+			}
+
 			outputPath = outputPathGenerator.GenerateOutputPath(FilePathBox.Text);
 			(Directory.Exists(FilePathBox.Text) ? Directory.GetFiles(FilePathBox.Text) :
 			File.Exists(FilePathBox.Text) ? new[] { FilePathBox.Text } : Array.Empty<string>()).ToList()

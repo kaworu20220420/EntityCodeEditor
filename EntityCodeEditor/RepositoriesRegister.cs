@@ -29,7 +29,7 @@ namespace EntityCodeEditor
 				if (code.Contains(addrepository)) continue;
 				addText += addrepository;
 			}
-			code.Replace(addLocation, addLocation + addText);
+			code.Replace(addLocation, addLocation + addText);//ここおかしい。
 			WriteFile(Path.GetDirectoryName(programCsPath), code, Path.GetFileName(programCsPath));
 		}
 	}
