@@ -19,65 +19,75 @@ namespace EntityCodeEditor
 
 		static string AddComments(List<string> lines)
 		{
-				var updatedLines = new List<string>(lines);
+			for (int i = lines.Count - 1; i >= 0; i--)
+			{
+				var line = lines[i];
+				var trimmed = line.Trim();
 
-				for (int i = lines.Count - 1; i >= 0; i--)
+				// インデント取得
+				var indentMatch = Regex.Match(line, @"^(\s*)");
+				var indent = indentMatch.Success ? indentMatch.Groups[1].Value : "";
+
+				// 直前に summary コメントがあるか確認（最大3行前まで）
+				bool hasSummary = false;
+				for (int j = i - 1; j >= Math.Max(0, i - 3); j--)
 				{
-					var line = lines[i].Trim();
-
-					// public プロパティ（1行のみ）
-					var propMatch = Regex.Match(line, @"^public\s+\w+\s+(\w+)\s*\{.*\}");
-					if (propMatch.Success)
+					if (lines[j].Trim().StartsWith("/// <summary>"))
 					{
-						var propName = propMatch.Groups[1].Value;
-						if (i == 0 || !lines[i - 1].Trim().StartsWith("/// <summary>"))
-						{
-							updatedLines.Insert(i, $"    /// <summary>\r\n    /// {propName}\r\n    /// </summary>");
-						}
-						continue;
-					}
-
-					// public メソッド（1行のみ）
-					var methodMatch = Regex.Match(line, @"^public\s+(\w+)\s+(\w+)\s*\(([^)]*)\)");
-					if (methodMatch.Success)
-					{
-						var returnType = methodMatch.Groups[1].Value;
-						var methodName = methodMatch.Groups[2].Value;
-						var args = methodMatch.Groups[3].Value;
-
-						if (i == 0 || !lines[i - 1].Trim().StartsWith("/// <summary>"))
-						{
-							var commentLines = new List<string>
-					{
-						$"    /// <summary>",
-						$"    /// {methodName}",
-						$"    /// </summary>"
-					};
-
-							if (!string.IsNullOrWhiteSpace(args))
-							{
-								foreach (var arg in args.Split(','))
-								{
-									var parts = arg.Trim().Split(' ');
-									if (parts.Length >= 2)
-									{
-										var paramName = parts[^1];
-										commentLines.Add($"    /// <param name=\"{paramName}\">{paramName}</param>");
-									}
-								}
-							}
-
-							if (returnType != "void")
-							{
-								commentLines.Add($"    /// <returns>{returnType}</returns>");
-							}
-
-							updatedLines.Insert(i, string.Join("\r\n", commentLines));
-						}
+						hasSummary = true;
+						break;
 					}
 				}
 
-				return string.Join("\r\n", updatedLines);	
+				if (hasSummary) continue;
+
+				// プロパティ判定（1行のみ）
+				var propMatch = Regex.Match(trimmed, @"^public\s+\w+\s+(\w+)\s*\{.*\}");
+				if (propMatch.Success)
+				{
+					var propName = propMatch.Groups[1].Value;
+					lines.Insert(i, $"{indent}/// <summary>\r\n{indent}/// {propName}\r\n{indent}/// </summary");
+					continue;
+				}
+
+				// メソッド判定（1行のみ）
+				var methodMatch = Regex.Match(trimmed, @"^public\s+(\w+)\s+(\w+)\s*\(([^)]*)\)");
+				if (methodMatch.Success)
+				{
+					var returnType = methodMatch.Groups[1].Value;
+					var methodName = methodMatch.Groups[2].Value;
+					var args = methodMatch.Groups[3].Value;
+
+					var commentLines = new List<string>
+				{
+					$"{indent}/// <summary>",
+					$"{indent}/// {methodName}",
+					$"{indent}/// </summary>"
+				};
+
+					if (!string.IsNullOrWhiteSpace(args))
+					{
+						foreach (var arg in args.Split(','))
+						{
+							var parts = arg.Trim().Split(' ');
+							if (parts.Length >= 2)
+							{
+								var paramName = parts[^1];
+								commentLines.Add($"{indent}/// <param name=\"{paramName}\">{paramName}</param>");
+							}
+						}
+					}
+
+					if (returnType != "void")
+					{
+						commentLines.Add($"{indent}/// <returns>{returnType}</returns>");
+					}
+
+					lines.Insert(i, string.Join("\r\n", commentLines));
+				}
+			}
+
+			return string.Join("\r\n", lines);
 		}
 	}
 }
