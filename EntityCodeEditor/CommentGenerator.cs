@@ -9,57 +9,77 @@ namespace EntityCodeEditor
 	{
 		internal void AddComment(string filePath)
 		{
-			var originalContent = File.ReadAllText(filePath, Encoding.UTF8);
-			var updatedContent = AddComments(originalContent);
+			var lines = File.ReadAllLines(filePath, Encoding.UTF8).ToList();
+			var updatedContent = AddComments(lines);
 
 			FileSystem.DeleteFile(filePath, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
 			File.WriteAllText(filePath, updatedContent);
 			Console.WriteLine("コメント追加完了。先輩のコード、さらにイケてる感じになったよ。");
 		}
 
-		static string AddComments(string content)
+		static string AddComments(List<string> lines)
 		{
-			// プロパティ（空行なし対応＋空行挿入）
-			content = Regex.Replace(content, @"(?<!/// <summary>[\s\S]*?)\s*(public\s+\w+\s+\w+\s*\{[\s\S]*?\})", match =>
-			{
-				var nameMatch = Regex.Match(match.Value, @"public\s+\w+\s+(\w+)\s*\{");
-				var name = nameMatch.Success ? nameMatch.Groups[1].Value : "Property";
-				var summary = $"    /// <summary>\r\n    /// {name}\r\n    /// </summary>\r\n\r\n";
-				return summary + match.Value;
-			});
+				var updatedLines = new List<string>(lines);
 
-			// メソッド・コンストラクタ（戻り値あり対応）
-			content = Regex.Replace(content, @"(?<!/// <summary>[\s\S]*?)\s*(public\s+(\w+)\s+(\w+)\s*\(([^)]*)\)\s*\{)", match =>
-			{
-				var fullSignature = match.Groups[1].Value;
-				var returnType = match.Groups[2].Value;
-				var methodName = match.Groups[3].Value;
-				var args = match.Groups[4].Value;
-
-				var summary = $"    /// <summary>\r\n    /// {methodName}\r\n    /// </summary>\r\n";
-				var paramComments = "";
-
-				if (!string.IsNullOrWhiteSpace(args))
+				for (int i = lines.Count - 1; i >= 0; i--)
 				{
-					foreach (var arg in args.Split(','))
+					var line = lines[i].Trim();
+
+					// public プロパティ（1行のみ）
+					var propMatch = Regex.Match(line, @"^public\s+\w+\s+(\w+)\s*\{.*\}");
+					if (propMatch.Success)
 					{
-						var parts = arg.Trim().Split(' ');
-						if (parts.Length >= 2)
+						var propName = propMatch.Groups[1].Value;
+						if (i == 0 || !lines[i - 1].Trim().StartsWith("/// <summary>"))
 						{
-							var paramName = parts[^1].Trim();
-							paramComments += $"    /// <param name=\"{paramName}\">{paramName}</param>\r\n";
+							updatedLines.Insert(i, $"    /// <summary>\r\n    /// {propName}\r\n    /// </summary>");
+						}
+						continue;
+					}
+
+					// public メソッド（1行のみ）
+					var methodMatch = Regex.Match(line, @"^public\s+(\w+)\s+(\w+)\s*\(([^)]*)\)");
+					if (methodMatch.Success)
+					{
+						var returnType = methodMatch.Groups[1].Value;
+						var methodName = methodMatch.Groups[2].Value;
+						var args = methodMatch.Groups[3].Value;
+
+						if (i == 0 || !lines[i - 1].Trim().StartsWith("/// <summary>"))
+						{
+							var commentLines = new List<string>
+					{
+						$"    /// <summary>",
+						$"    /// {methodName}",
+						$"    /// </summary>"
+					};
+
+							if (!string.IsNullOrWhiteSpace(args))
+							{
+								foreach (var arg in args.Split(','))
+								{
+									var parts = arg.Trim().Split(' ');
+									if (parts.Length >= 2)
+									{
+										var paramName = parts[^1];
+										commentLines.Add($"    /// <param name=\"{paramName}\">{paramName}</param>");
+									}
+								}
+							}
+
+							if (returnType != "void")
+							{
+								commentLines.Add($"    /// <returns>{returnType}</returns>");
+							}
+
+							updatedLines.Insert(i, string.Join("\r\n", commentLines));
 						}
 					}
 				}
 
-				var returnsComment = returnType != "void"
-					? $"    /// <returns>{returnType}</returns>\r\n"
-					: "";
-
-				return summary + paramComments + returnsComment + "\r\n    " + fullSignature;
-			});
-
-			return content;
+				return string.Join("\r\n", updatedLines);	
 		}
+		}
+	}
 	}
 }
