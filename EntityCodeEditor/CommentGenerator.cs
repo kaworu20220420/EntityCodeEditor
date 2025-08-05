@@ -32,7 +32,7 @@ namespace EntityCodeEditor
 				bool hasSummary = false;
 				for (int j = i - 1; j >= Math.Max(0, i - 3); j--)
 				{
-					if (lines[j].Trim().StartsWith("/// <summary>"))
+					if (lines[j].Trim().Contains("</summary>"))
 					{
 						hasSummary = true;
 						break;
