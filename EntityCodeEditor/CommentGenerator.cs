@@ -19,7 +19,7 @@ namespace EntityCodeEditor
 			Console.WriteLine("コメント追加完了");
 		}
 
-		static string AddComments(List<string> lines)
+		string AddComments(List<string> lines)
 		{
 			// 逆順でコメント挿入
 			for (int i = lines.Count - 1; i >= 0; i--)
@@ -32,16 +32,17 @@ namespace EntityCodeEditor
 				var indent = indentMatch.Success ? indentMatch.Groups[1].Value : "";
 
 				// プロパティ判定（型名とプロパティ名を抽出）
-				var propMatch = Regex.Match(line.Trim(), @"^public\s+([\w<>,\s]+)\s+(\w+)\s*\{.*\}");
-				if (propMatch.Success)
+				if (IsProperty(lines[i]))
 				{
-					var typeName = propMatch.Groups[1].Value.Trim();
-					var propName = propMatch.Groups[2].Value.Trim();
+					// 型名とプロパティ名を抽出
+					var parts = lines[i].Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+					var typeName = parts[1];
+					var propName = parts[2];
+
 					var comment = $"{indent}/// <summary>\r\n{indent}/// {propName} ({typeName})\r\n{indent}/// </summary>";
 					if (i + 1 < lines.Count && lines[i + 1].Contains("/summary"))
-					{
 						continue;
-					}
+
 					lines[i] = $"{comment}\r\n{lines[i]}";
 					continue;
 				}
@@ -89,6 +90,23 @@ namespace EntityCodeEditor
 			}
 
 			return string.Join("\r\n", lines);
+		}
+
+		bool IsProperty(string line)
+		{
+			var trimmed = line.Trim();
+
+			// 正規表現で1行プロパティを判定
+			var regexMatch = Regex.IsMatch(trimmed, @"^public\s+[\w<>,\s]+\s+\w+\s*\{.*\}");
+			if (regexMatch)
+				return true;
+
+			// Splitで3要素ならプロパティとみなす
+			var parts = trimmed.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+			if (parts.Length == 3 && parts[0] == "public")
+				return true;
+
+			return false;
 		}
 	}
 }
