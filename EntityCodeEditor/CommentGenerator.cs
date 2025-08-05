@@ -16,7 +16,7 @@ namespace EntityCodeEditor
 
 			FileSystem.DeleteFile(filePath, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
 			File.WriteAllText(filePath, updatedContent);
-			Console.WriteLine("コメント追加完了。先輩のコード、さらにイケてる感じになったよ。");
+			Console.WriteLine("コメント追加完了");
 		}
 
 		static string AddComments(List<string> lines)
@@ -24,6 +24,7 @@ namespace EntityCodeEditor
 			// 逆順でコメント挿入
 			for (int i = lines.Count - 1; i >= 0; i--)
 			{
+				var line = lines[i];
 				if (!lines[i].Contains("public"))
 					continue;
 
