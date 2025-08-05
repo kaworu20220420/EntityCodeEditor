@@ -19,38 +19,44 @@ namespace EntityCodeEditor
 
 		static string AddComments(List<string> lines)
 		{
-			for (int i = lines.Count - 1; i >= 0; i--)
+			// コメント対象行を抽出（public を含み、直前に </summary> がない）
+			var targets = lines
+				.Select((line, i) => new { line, i })
+				.Where(x =>
+					x.line.Contains("public") &&
+					!x.line.Contains("///") &&
+					(x.i == 0 || !lines[x.i - 1].Trim().Contains("</summary>"))
+				)
+				.ToList();
+
+			// 逆順でコメント挿入
+			for (int i = targets.Count - 1; i >= 0; i--)
 			{
-				var line = lines[i];
-				if (!line.Contains("public")) continue;
+				var target = targets[i];
+				var line = target.line;
+				var index = target.i;
 
-				var trimmed = line.Trim();
-
-				// インデント取得
 				var indentMatch = Regex.Match(line, @"^(\s*)");
 				var indent = indentMatch.Success ? indentMatch.Groups[1].Value : "";
 
-				// 1行前に </summary> があるか確認
-				if (i > 0 && lines[i - 1].Trim().Contains("</summary>"))
-				{
-					continue;
-				}
+				var trimmed = line.Trim();
 
-				// プロパティ判定（1行のみ）
-				var propMatch = Regex.Match(trimmed, @"^public\s+\w+\s+(\w+)\s*\{.*\}");
+				// プロパティ判定（型名とプロパティ名を抽出）
+				var propMatch = Regex.Match(trimmed, @"^public\s+([\w<>,\s]+)\s+(\w+)\s*\{.*\}");
 				if (propMatch.Success)
 				{
-					var propName = propMatch.Groups[1].Value;
-					var comment = $"{indent}/// <summary>\r\n{indent}/// {propName}\r\n{indent}/// </summary>";
-					lines.Insert(i, comment);
+					var typeName = propMatch.Groups[1].Value.Trim();
+					var propName = propMatch.Groups[2].Value;
+					var comment = $"{indent}/// <summary>\r\n{indent}/// {propName} ({typeName})\r\n{indent}/// </summary>";
+					lines.Insert(index, comment);
 					continue;
 				}
 
-				// メソッド判定（1行のみ）
-				var methodMatch = Regex.Match(trimmed, @"^public\s+(\w+)\s+(\w+)\s*\(([^)]*)\)");
+				// メソッド判定（戻り値・メソッド名・引数を抽出）
+				var methodMatch = Regex.Match(trimmed, @"^public\s+([\w<>,\s]+)\s+(\w+)\s*\(([^)]*)\)");
 				if (methodMatch.Success)
 				{
-					var returnType = methodMatch.Groups[1].Value;
+					var returnType = methodMatch.Groups[1].Value.Trim();
 					var methodName = methodMatch.Groups[2].Value;
 					var args = methodMatch.Groups[3].Value;
 
@@ -79,7 +85,7 @@ namespace EntityCodeEditor
 						commentLines.Add($"{indent}/// <returns>{returnType}</returns>");
 					}
 
-					lines.Insert(i, string.Join("\r\n", commentLines));
+					lines.Insert(index, string.Join("\r\n", commentLines));
 				}
 			}
 
