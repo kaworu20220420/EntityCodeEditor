@@ -39,7 +39,7 @@ namespace EntityCodeEditor
 					var typeName = parts[1];
 					var propName = parts[2];
 
-					var comment = $"{indent}/// <summary>\r\n{indent}/// {propName} ({typeName})\r\n{indent}/// </summary>";
+					var comment = $"\r\n{indent}/// <summary>\r\n{indent}/// {propName} ({typeName})\r\n{indent}/// </summary>";
 					if (i + 1 < lines.Count && lines[i + 1].Contains("/summary"))
 						continue;
 
