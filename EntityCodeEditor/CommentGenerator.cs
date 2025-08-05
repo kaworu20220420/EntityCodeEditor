@@ -32,11 +32,11 @@ namespace EntityCodeEditor
 				var indent = indentMatch.Success ? indentMatch.Groups[1].Value : "";
 
 				// プロパティ判定（型名とプロパティ名を抽出）
-				var propMatch = Regex.Match(lines[i].Trim(), @"^public\s+([\w<>,\s]+)\s+(\w+)\s*\{.*\}");
+				var propMatch = Regex.Match(line.Trim(), @"^public\s+([\w<>,\s]+)\s+(\w+)\s*\{.*\}");
 				if (propMatch.Success)
 				{
 					var typeName = propMatch.Groups[1].Value.Trim();
-					var propName = propMatch.Groups[2].Value;
+					var propName = propMatch.Groups[2].Value.Trim();
 					var comment = $"{indent}/// <summary>\r\n{indent}/// {propName} ({typeName})\r\n{indent}/// </summary>";
 					if (i + 1 < lines.Count && lines[i + 1].Contains("/summary"))
 					{
